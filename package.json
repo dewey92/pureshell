@@ -1,0 +1,17 @@
+{
+  "name": "pure-shell",
+  "version": "1.0.0",
+  "description": "Shell exersice using Purescript",
+  "main": "index.js",
+  "author": "Jihad D. Waspada",
+  "license": "MIT",
+  "private": false,
+  "bin": {
+    "pureshell": "bin/index.js"
+  },
+  "scripts": {
+    "mkbin": "spago bundle-app -t bin/output.js",
+    "dev": "spago build --watch --clear-screen",
+    "build": "yarn mkbin && yarn unlink && yarn link"
+  }
+}
