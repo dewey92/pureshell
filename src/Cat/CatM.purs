@@ -4,7 +4,8 @@ import Prelude
 
 import Control.Monad.Error.Class (class MonadError, try)
 import Control.Monad.Logger.Class (class MonadLogger, error, info)
-import Data.Either (Either(..))
+import Data.Bifunctor (bimap)
+import Data.Either (Either(..), either)
 import Data.List (List(..), (:))
 import Data.Map (empty)
 import Node.Encoding (Encoding(..))
@@ -23,34 +24,31 @@ instance showCatErrors :: Show e => Show (CatErrors e) where
 -- | should implement this typeclass to be able to call `cat`
 class (Monad m) <= MonadFile m where
   exists :: FilePath -> m Boolean
-  readTextFile :: Encoding -> FilePath -> m Unit
+  readTextFile :: Encoding -> FilePath -> m String
 
 -- | Nice little technique to emulate Constraint Kinds in Purescript
 -- | @see https://github.com/JordanMartinez/purescript-jordans-reference/blob/latestRelease/31-Design-Patterns/07-Simulating-Constraint-Kinds.md
 type MonadCat m e r =
   Show e =>
   MonadFile m =>
-  MonadLogger m =>
   MonadError e m =>
   r
 
 -- | The pure version of `cat` by using Constraints
-cat :: forall m. MonadCat m String (FilePath -> m Unit)
+cat :: forall m e. MonadCat m e (FilePath -> m (Either (CatErrors e) String))
 cat filePath = do
   fileExists <- exists filePath
   if fileExists
   then do
     result <- try $ readTextFile UTF8 filePath
-    case result of
-      Left err -> error' (FileNotReadable filePath err)
-      Right res -> info' res
-  else error' (FileNotExists filePath :: CatErrors String)
+    pure $ bimap (FileNotReadable filePath) identity result
+  else pure $ Left (FileNotExists filePath :: CatErrors e)
 
 -- | Handles the remaining arguments from `Main` function. Extract the first
 -- | element then pass to `cat` Otherwise, yield some error
-handleCatArgs :: forall m. MonadCat m String (List String -> m Unit)
+handleCatArgs :: forall m e. MonadLogger m => MonadCat m e (List String -> m Unit)
 handleCatArgs Nil = error' "You must provide a file path"
-handleCatArgs (f : _) = cat f
+handleCatArgs (f : _) = (cat f) >>= either error' info'
 
 error' :: forall m a. MonadLogger m => Show a => a -> m Unit
 error' a = error empty $ show a
