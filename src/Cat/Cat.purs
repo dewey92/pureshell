@@ -3,7 +3,6 @@ module PureShell.Cat.Cat where
 import Prelude
 
 import Data.Either (Either(..))
-import Data.List (List(..), (:))
 import Effect.Aff (Aff, Error, try)
 import Effect.Class (liftEffect)
 import Effect.Console (logShow)
@@ -30,8 +29,3 @@ cat filePath = do
       Right res -> logShow res
   else liftEffect $ logShow (FileNotExists filePath)
 
--- | Handles the remaining arguments from `Main` function. Extract the first
--- | element then pass to `cat`
-handleCatArgs :: List String -> Aff Unit
-handleCatArgs Nil = liftEffect $ logShow "You must provide a file path"
-handleCatArgs (f : _) = cat f

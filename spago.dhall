@@ -5,14 +5,15 @@ You can edit this file as you like.
 { name =
     "pure-shell"
 , dependencies =
-    [ "effect"
+    [ "aff"
     , "console"
-    , "psci-support"
+    , "effect"
     , "lists"
-    , "aff"
+    , "monad-logger"
     , "node-fs"
     , "node-fs-aff"
-    , "monad-logger"
+    , "optparse"
+    , "psci-support"
     ]
 , packages =
     ./packages.dhall
