@@ -1,5 +1,5 @@
 # PureShell 🖥
-My own personal excersice to tame Purescript compiler 😄 PureShell is an attempt to reimplement common Shell commands like `cat`, `ls`, `find`, etc in Purescript. PRs and suggestions are is very much welcomed
+My own personal excersice to tame Purescript compiler 😄 PureShell is an attempt to reimplement common Shell commands like `cat`, `ls`, `find`, etc in Purescript. PRs and suggestions are very much welcomed
 
 ## Development
 To try running in your local machine, some dependencies are required:
