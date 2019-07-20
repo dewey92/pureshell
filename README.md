@@ -25,7 +25,11 @@ yarn build
 and you'll have `pureshell` in your global variable
 
 ## Usage
-The easiest way to list of all available commands with their options, use:
+The easiest way to list all available commands along with their options, use
 ```
 pureshell --help
 ```
+
+Currently, it only support the following commands:
+- cat
+- ...
