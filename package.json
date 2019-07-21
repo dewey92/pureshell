@@ -1,6 +1,6 @@
 {
   "name": "pure-shell",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Shell exersice using Purescript",
   "main": "index.js",
   "author": "Jihad D. Waspada",

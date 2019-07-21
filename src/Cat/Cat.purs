@@ -9,6 +9,7 @@ import Effect.Console (logShow)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FS
 import Node.Path (FilePath)
+import PureShell.Common.Utility (logShowEscape)
 
 data CatErrors
   = FileNotReadable FilePath Error
@@ -26,6 +27,6 @@ cat filePath = do
     result <- try $ FS.readTextFile UTF8 filePath
     liftEffect $ case result of
       Left err -> logShow (FileNotReadable filePath err)
-      Right res -> logShow res
+      Right res -> logShowEscape res
   else liftEffect $ logShow (FileNotExists filePath)
 
