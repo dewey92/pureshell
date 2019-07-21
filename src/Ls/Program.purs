@@ -18,16 +18,17 @@ program = command "ls" (info lsParser $ progDesc "List a directory")
 
 lsParser :: Parser (Aff Unit)
 lsParser = ado
-  opts <- options
   fps <- filePathsToShow
-  in runMultipleFilePaths opts fps
+  opts <- options
+  in runMultipleFilePaths fps opts
   where
-    runMultipleFilePaths :: LsOptions -> List FilePath -> Aff Unit
-    runMultipleFilePaths opts fps = traverse_ (\fileName -> ls opts fileName *> breakLine) fps
+    runMultipleFilePaths :: List FilePath -> LsOptions -> Aff Unit
+    runMultipleFilePaths fps opts = traverse_ (\fileName -> ls fileName opts *> breakLine) fps
     breakLine :: Aff Unit
     breakLine = liftEffect $ logEscape "\n\n"
 
 -- | TODO: Some options are yet to be developed
+-- |
 -- | -r, to reverse the result list
 -- | -R, to recursively display the content of each dirs
 -- | -S, to sort by size

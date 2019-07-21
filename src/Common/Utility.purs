@@ -11,7 +11,7 @@ import Effect (Effect)
 import Effect.Console (log)
 
 unbacklash :: String -> String
-unbacklash s = replace' charsToEscape replaceImpl s
+unbacklash = replace' charsToEscape replaceImpl
   where
     charsToEscape :: Regex
     charsToEscape = unsafeRegex """\\([\\rnt'"])""" global

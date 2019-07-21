@@ -36,8 +36,8 @@ type LsOptions = {
 -- | TODO: Give better naming to it
 type ErrorOrFileStats = (Either LsError (FilePath /\ Stats))
 
-ls :: LsOptions -> FilePath -> Aff Unit
-ls options filePath = do
+ls :: FilePath -> LsOptions -> Aff Unit
+ls filePath options = do
   stats_ <- getStat filePath
   case stats_ of
     Left e -> liftEffect $ logShow e
@@ -56,7 +56,9 @@ showDirStats :: FilePath -> Aff Unit
 showDirStats filePath = getDirs filePath >>= concludeStats >>> logEscape >>> liftEffect
   where
     concludeStats :: Array ErrorOrFileStats -> String
-    concludeStats dirs = filter isRight dirs # map (either (const "oops") formatStats) # joinWith "\n"
+    concludeStats = filter isRight
+      >>> map (either (const "oops") formatStats)
+      >>> joinWith "\n"
 
 getStat :: FilePath -> Aff ErrorOrFileStats
 getStat filePath = do

@@ -3,11 +3,8 @@ module PureShell.Cat.CatM where
 import Prelude
 
 import Control.Monad.Error.Class (class MonadError, try)
-import Control.Monad.Logger.Class (class MonadLogger, error, info)
 import Data.Bifunctor (bimap)
-import Data.Either (Either(..), either)
-import Data.List (List(..), (:))
-import Data.Map (empty)
+import Data.Either (Either(..))
 import Node.Encoding (Encoding(..))
 import Node.Path (FilePath)
 
@@ -43,15 +40,3 @@ cat filePath = do
     result <- try $ readTextFile UTF8 filePath
     pure $ bimap (FileNotReadable filePath) identity result
   else pure $ Left (FileNotExists filePath :: CatErrors e)
-
--- | Handles the remaining arguments from `Main` function. Extract the first
--- | element then pass to `cat` Otherwise, yield some error
-handleCatArgs :: forall m e. MonadLogger m => MonadCat m e (List String -> m Unit)
-handleCatArgs Nil = error' "You must provide a file path"
-handleCatArgs (f : _) = (cat f) >>= either error' info'
-
-error' :: forall m a. MonadLogger m => Show a => a -> m Unit
-error' a = error empty $ show a
-
-info' :: forall m a. MonadLogger m => Show a => a -> m Unit
-info' a = info empty $ show a
