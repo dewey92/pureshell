@@ -11,13 +11,13 @@ npm i -g purescript spago
 spago install
 ```
 
-To watch for changes, simpley run
+To watch for changes, do
 ```
 yarn dev
 ```
 
 ## Build
-Building is also easy. Run
+Building is also easy
 ```
 yarn build
 ```
@@ -30,7 +30,7 @@ The easiest way to list all available commands along with their options, use
 pureshell --help
 ```
 
-Currently, it only support the following commands:
+Currently it only supports the following commands:
 - cat
 - ls
 - ...
