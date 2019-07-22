@@ -2,13 +2,20 @@ module PureShell.Cat.Program where
 
 import Prelude
 
-import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 import Node.Path (FilePath)
 import Options.Applicative (CommandFields, Mod, Parser, argument, command, info, metavar, progDesc, str)
-import PureShell.Cat.Cat (cat)
+import PureShell.AppM (AppM)
+import PureShell.Cat.CatM (catM)
+import PureShell.Common.Utility (logEscape)
 
-program :: Mod CommandFields (Aff Unit)
-program = command "cat" (info (cat <$> options) $ progDesc "Simply read a file")
+program :: Mod CommandFields (AppM Unit)
+program = command "cat" (info runCat $ progDesc "Simply read a file")
+
+runCat :: Parser (AppM Unit)
+runCat = ado
+  opts <- options
+  in catM opts >>= (logEscape >>> liftEffect)
 
 options :: Parser FilePath
 options = argument str (metavar "FILEPATH")

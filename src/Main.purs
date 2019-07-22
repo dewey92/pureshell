@@ -8,6 +8,7 @@ import Effect (Effect)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Options.Applicative (Parser, execParser, helper, hsubparser, idm, info)
+import PureShell.AppM (AppM, runAppM)
 import PureShell.Cat.Program as Cat
 import PureShell.Ls.Program as Ls
 
@@ -16,7 +17,7 @@ foreign import argv :: Array String
 args :: List.List String
 args = List.drop 2 $ List.fromFoldable argv
 
-commandsWithHelper :: Parser (Aff.Aff Unit)
+commandsWithHelper :: Parser (AppM Unit)
 commandsWithHelper = helper <*> commands where
   commands =
         hsubparser Cat.program
@@ -24,4 +25,7 @@ commandsWithHelper = helper <*> commands where
 
 main :: Effect Unit
 main = Aff.launchAff_ do
-  join $ liftEffect $ execParser (info commandsWithHelper idm)
+  execParser (info commandsWithHelper idm)
+    # liftEffect
+    # join
+    # runAppM

@@ -5,26 +5,30 @@ import Prelude
 import Data.List (List)
 import Data.String (null)
 import Data.Traversable (traverse_)
-import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Node.Path (FilePath)
 import Options.Applicative (CommandFields, Mod, Parser, ReadM, argument, command, help, info, many, metavar, progDesc, short, switch)
 import Options.Applicative.Types (readerAsk)
+import PureShell.AppM (AppM)
 import PureShell.Common.Utility (logEscape)
-import PureShell.Ls.Ls (LsOptions, ls)
+import PureShell.Ls.LsM (LsOptions, lsM)
 
-program :: Mod CommandFields (Aff Unit)
+program :: Mod CommandFields (AppM Unit)
 program = command "ls" (info lsParser $ progDesc "List a directory")
 
-lsParser :: Parser (Aff Unit)
+-- | Combine all parsers and run the `ls` program. Since ls accepts multiple arguments,
+-- | it should traverse over the arguments to produce side-effects
+lsParser :: Parser (AppM Unit)
 lsParser = ado
   fps <- filePathsToShow
   opts <- options
   in runMultipleFilePaths fps opts
   where
-    runMultipleFilePaths :: List FilePath -> LsOptions -> Aff Unit
-    runMultipleFilePaths fps opts = traverse_ (\fileName -> ls fileName opts *> breakLine) fps
-    breakLine :: Aff Unit
+    runMultipleFilePaths :: List FilePath -> LsOptions -> AppM Unit
+    runMultipleFilePaths fps opts = traverse_ (\fp -> printResult fp opts *> breakLine) fps
+    printResult :: FilePath -> LsOptions -> AppM Unit
+    printResult fp opts = lsM fp opts >>= (logEscape >>> liftEffect)
+    breakLine :: AppM Unit
     breakLine = liftEffect $ logEscape "\n\n"
 
 -- | TODO: Some options are yet to be developed
