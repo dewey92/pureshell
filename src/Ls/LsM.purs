@@ -38,17 +38,17 @@ type LsOptions = {
 type FileStats = (FilePath /\ Stats)
 type ErrorOrFileStats = (Either LsError FileStats)
 
+-- | pure version of `ls`
 lsM :: forall m e.
   MonadFs e m =>
   FilePath -> LsOptions -> m String
-lsM filePath options = getStatSafe filePath
-  >>= case _ of
-    Left e -> pure $ show e -- FIXME: might want to return the error itself
-    Right fileStats@(_ /\ Stats s) -> do
-      stats <- if runFn0 s.isFile
-        then pure $ singleton fileStats -- lift to a List
-        else getDirStats filePath options
-      pure $ foldr (\curr acc -> acc <> (formatStats curr options) <> "\n") mempty stats
+lsM filePath options = getStatSafe filePath >>= case _ of
+  Left e -> pure $ show e
+  Right fileStats@(_ /\ Stats s) -> do
+    stats <- if runFn0 s.isFile
+      then pure $ singleton fileStats -- lift to a List
+      else getDirStats filePath options
+    pure $ foldr (\curr acc -> acc <> (formatStats curr options) <> "\n") mempty stats
 
 getStatSafe :: forall m e.
   MonadFs e m =>
@@ -68,7 +68,7 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
     concludeStats = filter (case _ of
         Left _ -> false
         Right (fp /\ (Stats s)) ->
-          -- | Exclude hidden files (starts with `.`) when `options.withHiddelFiles` is false
+          -- | Exclude hidden files (prefixed with `.`) when `options.withHiddelFiles` is false
           options.withHiddenFiles || not (startsWith (Pattern ".") $ removePath fp)
       )
       >>> (\s -> unsafePartial $ eliminateLeft s) -- FIXME: not sure why point-free doesn't work
