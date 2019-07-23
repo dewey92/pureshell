@@ -35,4 +35,4 @@ instance monadFsAppM :: MonadFs Error AppM where
   exists = AppM <<< FS.exists
   readTextFile e f = FS.readTextFile e f # AppM
   readDir = AppM <<< map fromFoldable <<< FS.readdir
-  getStat = AppM <<< FS.stat
+  getMetadata = AppM <<< FS.stat

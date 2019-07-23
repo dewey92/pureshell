@@ -5,20 +5,17 @@ module PureShell.Ls.LsM
 
 import Prelude
 
-import Data.Array (foldr, last)
+import Data.Array (foldr)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..), fromRight)
 import Data.Function.Uncurried (runFn0)
 import Data.List (List, filter, singleton)
-import Data.Maybe (maybe)
-import Data.String (Pattern(..), split)
 import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Node.FS.Stats (Stats(..))
 import Node.Path (FilePath)
-import Options.Applicative.Internal.Utils (startsWith)
 import Partial.Unsafe (unsafePartial)
-import PureShell.Common.FileM (class MonadFs, getStat, readDir, try)
+import PureShell.Common.FileM (class MonadFs, FileSystemType, getMetadata, isDirectory, isHidden, readDir, toFileSystemType, toRelativeOrAbsPath, try)
 
 data LsError = FileOrDirNotExists
 
@@ -35,27 +32,27 @@ type LsOptions = {
   withTrailingSlash :: Boolean
 }
 
-type FileStats = (FilePath /\ Stats)
+type FileStats = (FileSystemType /\ Stats)
 type ErrorOrFileStats = (Either LsError FileStats)
 
 -- | pure version of `ls`
 lsM :: forall m e.
   MonadFs e m =>
   FilePath -> LsOptions -> m String
-lsM filePath options = getStatSafe filePath >>= case _ of
+lsM filePath options = safeGetMetadata filePath >>= case _ of
   Left e -> pure $ show e
   Right fileStats@(_ /\ Stats s) -> do
     stats <- if runFn0 s.isFile
-      then pure $ singleton fileStats -- lift to a List
+      then fileStats # singleton # pure -- lift to a List
       else getDirStats filePath options
     pure $ foldr (\curr acc -> acc <> (formatStats curr options) <> "\n") mempty stats
 
-getStatSafe :: forall m e.
+safeGetMetadata :: forall m e.
   MonadFs e m =>
   FilePath -> m ErrorOrFileStats
-getStatSafe filePath = do
-  stats <- try $ getStat filePath
-  pure $ bimap (const FileOrDirNotExists) (filePath /\ _) stats
+safeGetMetadata filePath = do
+  stats <- try $ getMetadata filePath
+  pure $ bimap (const FileOrDirNotExists) (\s -> (toFileSystemType filePath s) /\ s) stats
 
 -- | When the given input is a directory, list that directory with the stats
 -- | then join the result with a breakline
@@ -67,11 +64,9 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
     concludeStats :: List ErrorOrFileStats -> List FileStats
     concludeStats = filter (case _ of
         Left _ -> false
-        Right (fp /\ (Stats s)) ->
-          -- | Exclude hidden files (prefixed with `.`) when `options.withHiddelFiles` is false
-          options.withHiddenFiles || not (startsWith (Pattern ".") $ removePath fp)
+        Right (fp /\ s) -> options.withHiddenFiles || not (isHidden fp)
       )
-      >>> (\s -> unsafePartial $ eliminateLeft s) -- FIXME: not sure why point-free doesn't work
+      >>> (\s -> unsafePartial $ eliminateLeft s)
     eliminateLeft :: Partial => List ErrorOrFileStats -> List FileStats
     eliminateLeft = map (fromRight)
 
@@ -79,29 +74,24 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
 listDirsInside :: forall m e.
   MonadFs e m =>
   FilePath -> m (List ErrorOrFileStats)
-listDirsInside dir = readDir dir >>= traverse (appendDirPrefix >>> getStatSafe)
+listDirsInside dir = readDir dir >>= traverse (appendDirPrefix >>> safeGetMetadata)
   where
-    appendDirPrefix content = dir <> "/" <> content
+    appendDirPrefix = toRelativeOrAbsPath dir
 
 -- | Helper function to format the thing
 formatStats :: FileStats -> LsOptions -> String
-formatStats (filePath /\ (Stats stats)) options = withStats <> formattedPath
+formatStats (fileSysType /\ (Stats s)) options = withStats <> formattedPath
   where
     withStats :: String
     withStats = if not options.withStats
       then ""
-      else show stats.mode <> " " <>
-        show stats.nlink <> " " <>
-        show stats.uid <> " " <>
-        show stats.gid <> " " <>
-        show stats.size <> " " <>
-        show stats.mtime <> " "
+      else show s.mode <> " " <>
+        show s.nlink <> " " <>
+        show s.uid <> " " <>
+        show s.gid <> " " <>
+        show s.size <> " " <>
+        show s.mtime <> " "
     formattedPath :: String
-    formattedPath = if options.withTrailingSlash && not (runFn0 stats.isFile)
-      then removePath filePath # (_ <> "/")
-      else removePath filePath
-
-removePath :: FilePath -> FilePath
-removePath fp = split (Pattern "/") fp
-  # last
-  # maybe fp identity
+    formattedPath = if options.withTrailingSlash && isDirectory fileSysType
+      then show fileSysType # (_ <> "/")
+      else show fileSysType
