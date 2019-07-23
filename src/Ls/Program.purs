@@ -27,12 +27,12 @@ lsParser = ado
   where
     runMultipleFilePaths :: List FilePath -> LsOptions -> AppM Unit
     runMultipleFilePaths fps opts = traverse (\fp -> lsM fp opts) fps
-      <#> zipWith (appendSrcWhenMultiple fps) fps
+      <#> zipWith (appendArgWhenMultiple fps) fps
       <#> intercalate "\n\n"
       >>= (logEscape >>> liftEffect)
 
-    appendSrcWhenMultiple :: List FilePath -> String -> String -> String
-    appendSrcWhenMultiple fps a b = if length fps == 1
+    appendArgWhenMultiple :: List FilePath -> String -> String -> String
+    appendArgWhenMultiple fps a b = if length fps == 1
       then b -- don't do anything
       else a <> ":" <> "\n" <> b
 
