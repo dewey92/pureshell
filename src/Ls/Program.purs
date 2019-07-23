@@ -2,9 +2,9 @@ module PureShell.Ls.Program where
 
 import Prelude
 
-import Data.List (List)
+import Data.List (List, intercalate, length, zipWith)
 import Data.String (null)
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse)
 import Effect.Class (liftEffect)
 import Node.Path (FilePath)
 import Options.Applicative (CommandFields, Mod, Parser, ReadM, argument, command, help, info, many, metavar, progDesc, short, switch)
@@ -26,13 +26,17 @@ lsParser = ado
   in runMultipleFilePaths fps opts
   where
     runMultipleFilePaths :: List FilePath -> LsOptions -> AppM Unit
-    runMultipleFilePaths fps opts = traverse_ (\fp -> printResult fp opts *> breakLine) fps
-    printResult :: FilePath -> LsOptions -> AppM Unit
-    printResult fp opts = lsM fp opts >>= (logEscape >>> liftEffect)
-    breakLine :: AppM Unit
-    breakLine = liftEffect $ logEscape "\n\n"
+    runMultipleFilePaths fps opts = traverse (\fp -> lsM fp opts) fps
+      <#> zipWith (appendSrcWhenMultiple fps) fps
+      <#> intercalate "\n\n"
+      >>= (logEscape >>> liftEffect)
 
--- | TODO: Some options are yet to be developed
+    appendSrcWhenMultiple :: List FilePath -> String -> String -> String
+    appendSrcWhenMultiple fps a b = if length fps == 1
+      then b -- don't do anything
+      else a <> ":" <> "\n" <> b
+
+-- | TODO: Some options are yet to be developed:
 -- |
 -- | -r, to reverse the result list
 -- | -R, to recursively display the content of each dirs

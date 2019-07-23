@@ -1,13 +1,13 @@
 module PureShell.Ls.Types
   ( LsOptions
-  , prefixWith
-  , toActualName
   , Visibility (..)
   , FileSystemType(..)
-  , toFileSystemType
   , isFile
-  , isHidden
   , isDirectory
+  , isHidden
+  , prefixWith
+  , toActualName
+  , toFileSystemType
   , module ME
   ) where
 
@@ -42,9 +42,9 @@ prefixWith :: FilePath -> FilePath -> FilePath
 prefixWith prefix fp = prefix <> "/" <> fp
 
 toActualName :: FilePath -> FilePath
-toActualName fp = split (Pattern "/") fp
-  # last
-  # (\s -> unsafePartial $ cast s)
+toActualName = split (Pattern "/")
+  >>> last
+  >>> (\s -> unsafePartial $ cast s)
   where
     cast :: Partial => Maybe FilePath -> FilePath
     cast = fromJust
@@ -69,7 +69,8 @@ identifyVisibility filePath
 
 -- | A type to identify whether a particular filepath is a file or directory
 data FileSystemType
-  = File FilePath Visibility | Directory FilePath Visibility
+  = File      FilePath Visibility
+  | Directory FilePath Visibility
 
 instance showFileSystemType :: Show FileSystemType where
   show (File f _) = f

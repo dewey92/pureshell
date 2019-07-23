@@ -63,9 +63,10 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
 listDirsInside :: forall m e. MonadFs e m => FilePath -> m (List ErrorOrFileStats)
 listDirsInside dir = readDir dir >>= traverse (prefixWith dir >>> safeGetMetadata)
 
+-- | Helper function to format metadata
+-- |
 -- | TODO: Format date properly
 -- | TODO: Give a colour to `Directory`. Might introduce some other monad
--- | Helper function to format metadata
 formatStats :: FileStats -> LsOptions -> String
 formatStats (fileSysType /\ (Stats s)) options = withStats <> formattedPath
   where
