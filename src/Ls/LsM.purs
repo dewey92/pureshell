@@ -1,11 +1,8 @@
-module PureShell.Ls.LsM
-  ( LsOptions
-  , lsM
-  ) where
+module PureShell.Ls.LsM ( lsM ) where
 
 import Prelude
 
-import Data.Array (foldr)
+import Data.Array (intercalate)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..), fromRight)
 import Data.Function.Uncurried (runFn0)
@@ -15,50 +12,42 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Node.FS.Stats (Stats(..))
 import Node.Path (FilePath)
 import Partial.Unsafe (unsafePartial)
-import PureShell.Common.FileM (class MonadFs, FileSystemType, getMetadata, isDirectory, isHidden, readDir, toFileSystemType, toRelativeOrAbsPath, try)
+import PureShell.Common.FileM (class MonadFs, getMetadata, readDir, try)
+import PureShell.Ls.Types (FileSystemType, LsOptions, isDirectory, isHidden, prefixWith, toFileSystemType)
 
 data LsError = FileOrDirNotExists
 
 instance showLsError :: Show LsError where
   show _ = "No such file or directory"
 
--- | These options are actually coming from the parser
--- | `withStats`         -> to show basic statistic in a formatted way
--- | `withHiddenFiles`   -> to show hidden files under a directory, normally prefixed with `.`
--- | `withTrailingSlash` -> to show trailing slashes for directories
-type LsOptions = {
-  withStats :: Boolean,
-  withHiddenFiles :: Boolean,
-  withTrailingSlash :: Boolean
-}
-
 type FileStats = (FileSystemType /\ Stats)
 type ErrorOrFileStats = (Either LsError FileStats)
 
--- | pure version of `ls`
-lsM :: forall m e.
-  MonadFs e m =>
-  FilePath -> LsOptions -> m String
+-- | The main program of `ls` command
+lsM :: forall m e. MonadFs e m => FilePath -> LsOptions -> m String
 lsM filePath options = safeGetMetadata filePath >>= case _ of
   Left e -> pure $ show e
   Right fileStats@(_ /\ Stats s) -> do
     stats <- if runFn0 s.isFile
       then fileStats # singleton # pure -- lift to a List
       else getDirStats filePath options
-    pure $ foldr (\curr acc -> acc <> (formatStats curr options) <> "\n") mempty stats
+    pure $ summarizeStats stats
+    where
+      summarizeStats :: List FileStats -> String
+      summarizeStats = map (flip formatStats options) >>> intercalate "\n"
 
-safeGetMetadata :: forall m e.
-  MonadFs e m =>
-  FilePath -> m ErrorOrFileStats
+-- | Safely get metadata (stats) and transforms to `FileStats` if succeeds
+safeGetMetadata :: forall m e. MonadFs e m => FilePath -> m ErrorOrFileStats
 safeGetMetadata filePath = do
   stats <- try $ getMetadata filePath
-  pure $ bimap (const FileOrDirNotExists) (\s -> (toFileSystemType filePath s) /\ s) stats
+  pure $ bimap
+    (const FileOrDirNotExists)
+    (\s -> (toFileSystemType filePath s) /\ s)
+    stats
 
 -- | When the given input is a directory, list that directory with the stats
 -- | then join the result with a breakline
-getDirStats :: forall m e.
-  MonadFs e m =>
-  FilePath -> LsOptions -> m (List FileStats)
+getDirStats :: forall m e. MonadFs e m => FilePath -> LsOptions -> m (List FileStats)
 getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pure
   where
     concludeStats :: List ErrorOrFileStats -> List FileStats
@@ -71,14 +60,12 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
     eliminateLeft = map (fromRight)
 
 -- | Read all files and directories in a given filepath
-listDirsInside :: forall m e.
-  MonadFs e m =>
-  FilePath -> m (List ErrorOrFileStats)
-listDirsInside dir = readDir dir >>= traverse (appendDirPrefix >>> safeGetMetadata)
-  where
-    appendDirPrefix = toRelativeOrAbsPath dir
+listDirsInside :: forall m e. MonadFs e m => FilePath -> m (List ErrorOrFileStats)
+listDirsInside dir = readDir dir >>= traverse (prefixWith dir >>> safeGetMetadata)
 
--- | Helper function to format the thing
+-- | TODO: Format date properly
+-- | TODO: Give a colour to `Directory`. Might introduce some other monad
+-- | Helper function to format metadata
 formatStats :: FileStats -> LsOptions -> String
 formatStats (fileSysType /\ (Stats s)) options = withStats <> formattedPath
   where

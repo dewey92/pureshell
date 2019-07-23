@@ -11,7 +11,8 @@ import Options.Applicative (CommandFields, Mod, Parser, ReadM, argument, command
 import Options.Applicative.Types (readerAsk)
 import PureShell.AppM (AppM)
 import PureShell.Common.Utility (logEscape)
-import PureShell.Ls.LsM (LsOptions, lsM)
+import PureShell.Ls.LsM (lsM)
+import PureShell.Ls.Types (LsOptions)
 
 program :: Mod CommandFields (AppM Unit)
 program = command "ls" (info lsParser $ progDesc "List a directory")
