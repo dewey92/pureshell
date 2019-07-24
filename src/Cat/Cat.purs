@@ -1,4 +1,4 @@
-module PureShell.Cat.CatM where
+module PureShell.Cat.Cat where
 
 import Prelude
 
@@ -23,8 +23,8 @@ type MonadCat m e r =
   r
 
 -- | The pure version of `cat` by using Constraints
-catM :: forall m e. MonadCat m e (FilePath -> m String)
-catM filePath = do
+cat :: forall m e. MonadCat m e (FilePath -> m String)
+cat filePath = do
   fileExists <- exists filePath
   if fileExists
   then do

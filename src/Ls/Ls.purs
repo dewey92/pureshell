@@ -1,4 +1,4 @@
-module PureShell.Ls.LsM ( lsM ) where
+module PureShell.Ls.Ls ( ls ) where
 
 import Prelude
 
@@ -23,8 +23,8 @@ type FileStats = (FileSystemType /\ Stats)
 type ErrorOrFileStats = (Either LsError FileStats)
 
 -- | The main program of `ls` command
-lsM :: forall m e. MonadFs e m => FilePath -> LsOptions -> m String
-lsM filePath options = safeGetMetadata filePath >>= case _ of
+ls :: forall m e. MonadFs e m => FilePath -> LsOptions -> m String
+ls filePath options = safeGetMetadata filePath >>= case _ of
   Left e -> pure $ show e
   Right fileStats@(f /\ _) -> do
     stats <- if isFile f

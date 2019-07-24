@@ -9,7 +9,7 @@ import Node.Path (FilePath)
 import Options.Applicative (CommandFields, Mod, Parser, argument, command, help, info, many, metavar, progDesc, short, str, switch)
 import PureShell.AppM (AppM)
 import PureShell.Common.Utility (logEscape)
-import PureShell.Ls.LsM (lsM)
+import PureShell.Ls.Ls (ls)
 import PureShell.Ls.Types (LsOptions)
 
 program :: Mod CommandFields (AppM Unit)
@@ -24,7 +24,7 @@ lsParser = ado
   in runMultipleFilePaths fps opts
   where
     runMultipleFilePaths :: List FilePath -> LsOptions -> AppM Unit
-    runMultipleFilePaths fps opts = traverse (\fp -> lsM fp opts) fps
+    runMultipleFilePaths fps opts = traverse (\fp -> ls fp opts) fps
       <#> zipWith (appendArgWhenMultiple fps) fps
       <#> intercalate "\n\n"
       >>= (logEscape >>> liftEffect)
