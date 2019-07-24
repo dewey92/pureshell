@@ -2,13 +2,11 @@ module PureShell.Ls.Program where
 
 import Prelude
 
-import Data.List (List, intercalate, length, zipWith)
-import Data.String (null)
+import Data.List (List(..), intercalate, length, singleton, zipWith)
 import Data.Traversable (traverse)
 import Effect.Class (liftEffect)
 import Node.Path (FilePath)
-import Options.Applicative (CommandFields, Mod, Parser, ReadM, argument, command, help, info, many, metavar, progDesc, short, switch)
-import Options.Applicative.Types (readerAsk)
+import Options.Applicative (CommandFields, Mod, Parser, argument, command, help, info, many, metavar, progDesc, short, str, switch)
 import PureShell.AppM (AppM)
 import PureShell.Common.Utility (logEscape)
 import PureShell.Ls.LsM (lsM)
@@ -60,7 +58,8 @@ options = ado
   in { withStats, withHiddenFiles, withTrailingSlash }
 
 filePathsToShow :: Parser (List FilePath)
-filePathsToShow = many $ argument pickDir (metavar "FILEPATH")
-
-pickDir :: ReadM String
-pickDir = readerAsk >>= \s -> pure $ if null s then "." else s
+filePathsToShow = ado
+  args <- many $ argument str (metavar "FILEPATH")
+  in case args of
+    Nil -> singleton "."
+    _ -> args
