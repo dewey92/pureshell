@@ -5,7 +5,6 @@ import Prelude
 import Data.Array (intercalate)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..), fromRight)
-import Data.Function.Uncurried (runFn0)
 import Data.List (List, filter, singleton)
 import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -13,7 +12,7 @@ import Node.FS.Stats (Stats(..))
 import Node.Path (FilePath)
 import Partial.Unsafe (unsafePartial)
 import PureShell.Common.FileM (class MonadFs, getMetadata, readDir, try)
-import PureShell.Ls.Types (FileSystemType, LsOptions, isDirectory, isHidden, prefixWith, toFileSystemType)
+import PureShell.Ls.Types (FileSystemType, LsOptions, isDirectory, isFile, isHidden, prefixWith, toFileSystemType)
 
 data LsError = FileOrDirNotExists
 
@@ -27,8 +26,8 @@ type ErrorOrFileStats = (Either LsError FileStats)
 lsM :: forall m e. MonadFs e m => FilePath -> LsOptions -> m String
 lsM filePath options = safeGetMetadata filePath >>= case _ of
   Left e -> pure $ show e
-  Right fileStats@(_ /\ Stats s) -> do
-    stats <- if runFn0 s.isFile
+  Right fileStats@(f /\ _) -> do
+    stats <- if isFile f
       then fileStats # singleton # pure -- lift to a List
       else getDirStats filePath options
     pure $ summarizeStats stats

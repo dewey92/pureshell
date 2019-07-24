@@ -1,1 +1,0 @@
-exports.argv = process.argv;

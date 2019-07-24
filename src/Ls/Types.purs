@@ -32,23 +32,6 @@ type LsOptions = {
   withTrailingSlash :: Boolean
 }
 
--- | Some helper functions to deal with file paths.
--- |
--- | Ideally there should be some kind of
--- | `newtype` just to differentiate between Relative, Absoulte, and Actual Name of a filepath.
--- | But that requires extra work and not sure if it's worth the effort
-
-prefixWith :: FilePath -> FilePath -> FilePath
-prefixWith prefix fp = prefix <> "/" <> fp
-
-toActualName :: FilePath -> FilePath
-toActualName = split (Pattern "/")
-  >>> last
-  >>> (\s -> unsafePartial $ cast s)
-  where
-    cast :: Partial => Maybe FilePath -> FilePath
-    cast = fromJust
-
 -- | A file system type is hidden when it's prefixed by `.`
 data Visibility = Hidden | Visible
 
@@ -93,3 +76,20 @@ toFileSystemType :: FilePath -> NodeFs.Stats -> FileSystemType
 toFileSystemType fp s
   | NodeFs.isDirectory s = Directory (toActualName fp) (identifyVisibility fp)
   | otherwise = File (toActualName fp) (identifyVisibility fp)
+
+-- | Some helper functions to deal with file paths.
+-- |
+-- | Ideally there should be some kind of
+-- | `newtype` just to differentiate between Relative, Absoulte, and Actual Name of a filepath.
+-- | But that requires extra work and not sure if it's worth the effort
+
+prefixWith :: FilePath -> FilePath -> FilePath
+prefixWith prefix fp = prefix <> "/" <> fp
+
+toActualName :: FilePath -> FilePath
+toActualName = split (Pattern "/")
+  >>> last
+  >>> (\s -> unsafePartial $ cast s)
+  where
+    cast :: Partial => Maybe FilePath -> FilePath
+    cast = fromJust
