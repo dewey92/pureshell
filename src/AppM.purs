@@ -15,7 +15,7 @@ import PureShell.Common.FileM (class MonadFs)
 
 newtype AppM a = AppM (Aff a)
 
-runAppM :: forall a. AppM a -> Aff a
+runAppM :: AppM ~> Aff
 runAppM (AppM a) = a
 
 derive newtype instance functorAppM :: Functor AppM

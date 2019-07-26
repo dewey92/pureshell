@@ -12,6 +12,7 @@
   "scripts": {
     "mkbin": "spago bundle-app -t bin/output.js",
     "dev": "spago build --watch --clear-screen",
+    "test": "spago test",
     "build": "yarn mkbin && yarn unlink && yarn link"
   }
 }

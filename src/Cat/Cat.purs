@@ -1,4 +1,7 @@
-module PureShell.Cat.Cat where
+module PureShell.Cat.Cat
+  ( CatErrors(..)
+  , cat
+  ) where
 
 import Prelude
 
