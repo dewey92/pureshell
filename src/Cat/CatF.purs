@@ -6,15 +6,14 @@ module PureShell.Cat.CaF
 
 import Prelude
 
-import Control.Monad.Free (Free, liftF, runFreeM)
+import Control.Monad.Free (Free, liftF, runFree, runFreeM)
 import Data.Either (Either(..), either)
-import Data.Identity (Identity)
 import Effect.Aff (Aff, Error, try)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FS
 import Node.Path (FilePath)
 
--- | All errors occuring during `cat` operation
+-- | All errors expected to occur in the program
 -- |
 -- | TODO: add `FilePathIsDir` error
 data CatErrors e
@@ -48,9 +47,9 @@ return :: forall e. String -> Cat e String
 return = liftF <<< Return
 
 -- | The pure version of `cat` by using Free Monad. What it means by using Free
--- | is that functions like `exists` and `readFile` are actually just data and
--- | don't run any side-effects thus making the operations pure. They are just
--- | **descriptions** of steps of a program.
+-- | is that functions like `exists` and `readFile` are actualluy returning
+-- | **descriptions** of a program. Thus making the whole operations _free_ (oops)
+-- | of side effects.
 cat :: forall e. Show e => FilePath -> Cat e String
 cat filePath = do
   fileExists <- exists filePath
@@ -76,17 +75,17 @@ runCat = runFreeM go
       pure $ next content
     go (Return a) = pure a
 
--- | Another imterpreter of the `cat` program. In this case, an interpreter
+-- | Another interpreter of the `cat` program. In this case, an interpreter
 -- | for unit testing
-runCatTest :: Cat String String -> Identity String
-runCatTest = runFreeM go
+runCatTest :: Cat String String -> String
+runCatTest = runFree go
   where
     go (Exists fp next)
-      | fp == "index.html" = pure $ next true
-      | otherwise = pure $ next false
+      | fp == "index.html" = next true
+      | otherwise = next false
 
     go (ReadFile fp next)
-      | fp == "index.html" = pure $ next (Right "<h1>File content</h1>")
-      | otherwise = pure $ next $ Left ("Oops. " <> fp <> "is unreadable")
+      | fp == "index.html" = next (Right "<h1>File content</h1>")
+      | otherwise = next $ Left ("Oops. " <> fp <> "is unreadable")
 
-    go (Return a) = pure a
+    go (Return a) = a
