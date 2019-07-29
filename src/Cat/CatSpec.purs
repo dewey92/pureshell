@@ -36,7 +36,7 @@ instance monadFsTestCatM :: MonadFs Error TestCatM where
   readDir _ = pure Nil
   getMetadata _ = pure mockMetadata
 
--- spec :: forall m e. Monad m => Show e => MonadFs Error m => SpecT m Unit m Unit
+-- spec :: ∀ m e. Monad m => Show e => MonadFs Error m => SpecT m Unit m Unit
 spec :: Spec Unit
 spec = describe "cat" do
   it "throws when reading an invalid path" do

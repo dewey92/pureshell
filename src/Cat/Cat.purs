@@ -26,7 +26,7 @@ type MonadCat m e r =
   r
 
 -- | The pure version of `cat` by using Constraints
-cat :: forall m e. MonadCat m e (FilePath -> m String)
+cat :: ∀ m e. MonadCat m e (FilePath -> m String)
 cat filePath = do
   fileExists <- exists filePath
   if fileExists

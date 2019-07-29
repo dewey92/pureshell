@@ -23,7 +23,7 @@ type FileStats = (FileSystemType /\ Stats)
 type ErrorOrFileStats = (Either LsError FileStats)
 
 -- | The main program of `ls` command
-ls :: forall m e. MonadFs e m => FilePath -> LsOptions -> m String
+ls :: ∀ m e. MonadFs e m => FilePath -> LsOptions -> m String
 ls filePath options = safeGetMetadata filePath >>= case _ of
   Left e -> pure $ show e
   Right fileStats@(f /\ _) -> do
@@ -36,7 +36,7 @@ ls filePath options = safeGetMetadata filePath >>= case _ of
       summarizeStats = map (flip formatStats options) >>> intercalate "\n"
 
 -- | Safely get metadata (stats) and transforms to `FileStats` if succeeds
-safeGetMetadata :: forall m e. MonadFs e m => FilePath -> m ErrorOrFileStats
+safeGetMetadata :: ∀ m e. MonadFs e m => FilePath -> m ErrorOrFileStats
 safeGetMetadata filePath = do
   stats <- try $ getMetadata filePath
   pure $ bimap
@@ -46,7 +46,7 @@ safeGetMetadata filePath = do
 
 -- | When the given input is a directory, list that directory with the stats
 -- | then join the result with a breakline
-getDirStats :: forall m e. MonadFs e m => FilePath -> LsOptions -> m (List FileStats)
+getDirStats :: ∀ m e. MonadFs e m => FilePath -> LsOptions -> m (List FileStats)
 getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pure
   where
     concludeStats :: List ErrorOrFileStats -> List FileStats
@@ -59,7 +59,7 @@ getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pur
     eliminateLeft = map (fromRight)
 
 -- | Read all files and directories in a given filepath
-listDirsInside :: forall m e. MonadFs e m => FilePath -> m (List ErrorOrFileStats)
+listDirsInside :: ∀ m e. MonadFs e m => FilePath -> m (List ErrorOrFileStats)
 listDirsInside dir = readDir dir >>= traverse (prefixWith dir >>> safeGetMetadata)
 
 -- | Helper function to format metadata

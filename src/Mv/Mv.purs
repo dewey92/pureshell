@@ -5,5 +5,5 @@ import Prelude
 import Node.Path (FilePath)
 import PureShell.Common.FileM (class MonadFs)
 
-mv :: forall m e. MonadFs e m => FilePath -> FilePath -> m (Unit)
+mv :: ∀ m e. MonadFs e m => FilePath -> FilePath -> m (Unit)
 mv _ _ = pure unit

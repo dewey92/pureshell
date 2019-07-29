@@ -37,20 +37,20 @@ derive instance catFunctor :: Functor (CatF e)
 
 type Cat e a = Free (CatF e) a
 
-exists :: forall e. FilePath -> Cat e Boolean
+exists :: ∀ e. FilePath -> Cat e Boolean
 exists fp = liftF $ Exists fp identity
 
-readFile :: forall e. FilePath -> Cat e (Either e String)
+readFile :: ∀ e. FilePath -> Cat e (Either e String)
 readFile fp = liftF $ ReadFile fp identity
 
-return :: forall e. String -> Cat e String
+return :: ∀ e. String -> Cat e String
 return = liftF <<< Return
 
 -- | The pure version of `cat` by using Free Monad. What it means by using Free
 -- | is that functions like `exists` and `readFile` are actualluy returning
 -- | **descriptions** of a program. Thus making the whole operations _free_ (oops)
 -- | of side effects.
-cat :: forall e. Show e => FilePath -> Cat e String
+cat :: ∀ e. Show e => FilePath -> Cat e String
 cat filePath = do
   fileExists <- exists filePath
   if fileExists

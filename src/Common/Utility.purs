@@ -26,5 +26,5 @@ unbacklash = replace' charsToEscape replaceImpl
 logEscape :: String -> Effect Unit
 logEscape = unbacklash >>> log
 
-logShowEscape :: forall a. Show a => a -> Effect Unit
+logShowEscape :: ∀ a. Show a => a -> Effect Unit
 logShowEscape = show >>> logEscape
