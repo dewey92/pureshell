@@ -6,8 +6,8 @@ import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError
 import Data.List (List(..))
 import Effect.Aff (Aff, Error, error)
 import PureShell.Cat.Cat (CatErrors(..), cat)
-import PureShell.Common.FileM (class MonadFs)
-import PureShell.Mock.FileM (mockMetadata)
+import PureShell.Common.MonadFS (class MonadFS)
+import PureShell.Mock.MonadFS (mockMetadata)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Assertions.String (shouldContain)
@@ -26,17 +26,17 @@ derive newtype instance monadTestCatM :: Monad TestCatM
 derive newtype instance monadThrowTestCatM :: MonadThrow Error TestCatM
 derive newtype instance monadErrorTestCatM :: MonadError Error TestCatM
 
-instance monadFsTestCatM :: MonadFs Error TestCatM where
+instance monadFSTestCatM :: MonadFS Error TestCatM where
   exists fp
     | fp == "validFile" || fp == "someDir" = pure true
     | otherwise = pure false
-  readTextFile _ fp
+  readFile fp
     | fp == "validFile" = pure "file content"
     | otherwise = throwError $ error "a dir"
   readDir _ = pure Nil
   getMetadata _ = pure mockMetadata
 
--- spec :: ∀ m e. Monad m => Show e => MonadFs Error m => SpecT m Unit m Unit
+-- spec :: ∀ m e. Monad m => Show e => MonadFS Error m => SpecT m Unit m Unit
 spec :: Spec Unit
 spec = describe "cat" do
   it "throws when reading an invalid path" do

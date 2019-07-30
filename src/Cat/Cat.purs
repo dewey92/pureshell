@@ -6,9 +6,8 @@ module PureShell.Cat.Cat
 import Prelude
 
 import Data.Either (either)
-import Node.Encoding (Encoding(..))
 import Node.Path (FilePath)
-import PureShell.Common.FileM (class MonadFs, exists, readTextFile, try)
+import PureShell.Common.MonadFS (class MonadFS, exists, readFile, try)
 
 data CatErrors e
   = FileNotReadable FilePath e
@@ -22,7 +21,7 @@ instance showCatErrors :: Show e => Show (CatErrors e) where
 -- | @see https://github.com/JordanMartinez/purescript-jordans-reference/blob/latestRelease/31-Design-Patterns/07-Simulating-Constraint-Kinds.md
 type MonadCat m e r =
   Show e =>
-  MonadFs e m =>
+  MonadFS e m =>
   r
 
 -- | The pure version of `cat` by using Constraints
@@ -31,6 +30,6 @@ cat filePath = do
   fileExists <- exists filePath
   if fileExists
   then do
-    result <- try $ readTextFile UTF8 filePath
+    result <- try $ readFile filePath
     pure $ either (FileNotReadable filePath >>> show) identity result
   else pure $ show (FileNotExists filePath :: CatErrors e)

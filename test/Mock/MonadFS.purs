@@ -1,4 +1,4 @@
-module PureShell.Mock.FileM where
+module PureShell.Mock.MonadFS where
 
 import Data.Function.Uncurried (mkFn0)
 import Data.JSDate (fromTime)

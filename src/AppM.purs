@@ -10,8 +10,9 @@ import Data.List (fromFoldable)
 import Effect.Aff (Aff, Error)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FS
-import PureShell.Common.FileM (class MonadFs)
+import PureShell.Common.MonadFS (class MonadFS)
 
 newtype AppM a = AppM (Aff a)
 
@@ -31,8 +32,11 @@ derive newtype instance monadEffAppM :: MonadEffect AppM
 derive newtype instance monadAffAppM :: MonadAff AppM
 
 -- | Give `AppM` capability to abstract over file system
-instance monadFsAppM :: MonadFs Error AppM where
+instance monadFSAppM :: MonadFS Error AppM where
+  -- check
   exists = AppM <<< FS.exists
-  readTextFile e f = FS.readTextFile e f # AppM
+
+  -- read
+  readFile = AppM <<< FS.readTextFile UTF8
   readDir = AppM <<< map fromFoldable <<< FS.readdir
   getMetadata = AppM <<< FS.stat
