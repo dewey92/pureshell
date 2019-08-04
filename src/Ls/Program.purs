@@ -2,6 +2,8 @@ module PureShell.Ls.Program where
 
 import Prelude
 
+import Control.Monad.Except (runExceptT)
+import Data.Either (either)
 import Data.List (List(..), intercalate, length, singleton, zipWith)
 import Data.Traversable (traverse)
 import Effect.Class (liftEffect)
@@ -24,11 +26,17 @@ lsParser = ado
   in runMultipleFilePaths fps opts
   where
     runMultipleFilePaths :: List FilePath -> LsOptions -> AppM Unit
-    runMultipleFilePaths fps opts = traverse (\fp -> ls fp opts) fps
+    runMultipleFilePaths fps opts = traverse (\fp -> runLsProgram fp opts) fps
       <#> zipWith (appendArgWhenMultiple fps) fps
       <#> intercalate "\n\n"
       >>= (logEscape >>> liftEffect)
 
+    -- | Run  `ls` and convert errors (if any) to String
+    runLsProgram :: FilePath -> LsOptions -> AppM String
+    runLsProgram fp opts = runExceptT (ls fp opts) <#> either show identity
+
+    -- | When multiple filepaths are passed as args, add "filepath:" header to
+    -- | distinguish one argument from the others
     appendArgWhenMultiple :: List FilePath -> String -> String -> String
     appendArgWhenMultiple fps a b = if length fps == 1
       then b -- don't do anything

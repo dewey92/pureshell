@@ -2,6 +2,8 @@ module PureShell.Cat.Program where
 
 import Prelude
 
+import Control.Monad.Except (runExceptT)
+import Data.Either (either)
 import Effect.Class (liftEffect)
 import Node.Path (FilePath)
 import Options.Applicative (CommandFields, Mod, Parser, argument, command, info, metavar, progDesc, str)
@@ -10,12 +12,14 @@ import PureShell.Cat.Cat (cat)
 import PureShell.Common.Utility (logEscape)
 
 program :: Mod CommandFields (AppM Unit)
-program = command "cat" (info runCat $ progDesc "Simply read a file")
+program = command "cat" (info catParser $ progDesc "Simply read a file")
 
-runCat :: Parser (AppM Unit)
-runCat = ado
-  opts <- options
-  in cat opts >>= (logEscape >>> liftEffect)
+catParser :: Parser (AppM Unit)
+catParser = ado
+  filePath <- getFilePath
+  in runCat filePath >>= logEscape >>> liftEffect
+  where
+    runCat fp = runExceptT (cat fp) <#> either show identity
 
-options :: Parser FilePath
-options = argument str (metavar "FILEPATH")
+getFilePath :: Parser FilePath
+getFilePath = argument str (metavar "FILEPATH")
