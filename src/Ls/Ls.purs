@@ -27,7 +27,7 @@ ls :: ∀ m e. MonadFS e m => FilePath -> LsOptions -> ExceptT LsError m String
 ls filePath options = do
   fileStats@(f /\ _) <- getFileStats filePath
   stats <- if isFile f
-    then fileStats # singleton # pure -- lift to a List
+    then pure $ singleton fileStats -- lift to a List
     else getDirStats filePath options
   pure $ summarizeStats stats
   where
@@ -51,7 +51,7 @@ getDirStats filePath options = do
   fileStats <- traverse (prefixWith filePath >>> getFileStats) dirContent
   pure $ respectOptions fileStats
   where
-    respectOptions = filter (\(fp /\ s) -> options.withHiddenFiles || not (isHidden fp))
+    respectOptions = filter (\(fp /\ _) -> options.withHiddenFiles || not (isHidden fp))
 
 -- | Helper function to format metadata
 -- |
