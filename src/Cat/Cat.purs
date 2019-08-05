@@ -5,31 +5,27 @@ module PureShell.Cat.Cat
 
 import Prelude
 
-import Data.Either (either)
+import Control.Monad.Except (ExceptT, except, withExceptT)
+import Data.Either (Either(..))
 import Node.Path (FilePath)
-import PureShell.Common.MonadFS (class MonadFS, exists, readFile, try)
+import PureShell.Common.MonadFS (class MonadFS, exists, readFile)
 
-data CatErrors e
-  = FileNotReadable FilePath e
-  | FileNotExists FilePath
+data CatErrors
+  = FileNotExists FilePath
+  | FileIsDir FilePath
+  | MiscError FilePath
 
-instance showCatErrors :: Show e => Show (CatErrors e) where
-  show (FileNotReadable path err) = "Can't read file \"" <> path <> "\" with an error => " <> show err
+derive instance eqCatErrors :: Eq CatErrors
+
+instance showCatErrors :: Show CatErrors where
   show (FileNotExists path) = "Oops bro. FilePath \"" <> path <> "\" doesn't exist"
-
--- | Nice little technique to emulate Constraint Kinds in Purescript
--- | @see https://github.com/JordanMartinez/purescript-jordans-reference/blob/latestRelease/31-Design-Patterns/07-Simulating-Constraint-Kinds.md
-type MonadCat m e r =
-  Show e =>
-  MonadFS e m =>
-  r
+  show (FileIsDir path) = path <> " is a directory"
+  show (MiscError path) = "Can't read \"" <> path <> "\""
 
 -- | The pure version of `cat` by using Constraints
-cat :: ∀ m e. MonadCat m e (FilePath -> m String)
+cat :: ∀ m e. MonadFS e m => FilePath -> ExceptT CatErrors m String
 cat filePath = do
-  fileExists <- exists filePath
-  if fileExists
-  then do
-    result <- try $ readFile filePath
-    pure $ either (FileNotReadable filePath >>> show) identity result
-  else pure $ show (FileNotExists filePath :: CatErrors e)
+  doesExist <- withExceptT (const (MiscError filePath)) (exists filePath)
+  case doesExist of
+    false -> except $ Left (FileNotExists filePath)
+    true -> withExceptT (const (MiscError filePath)) (readFile filePath)

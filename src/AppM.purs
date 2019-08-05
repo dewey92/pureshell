@@ -5,9 +5,9 @@ module PureShell.AppM
 
 import Prelude
 
-import Control.Monad.Error.Class (class MonadError, class MonadThrow)
+import Control.Monad.Except (ExceptT(..))
 import Data.List (fromFoldable)
-import Effect.Aff (Aff, Error)
+import Effect.Aff (Aff, Error, try)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Node.Encoding (Encoding(..))
@@ -24,19 +24,19 @@ derive newtype instance applyAppM :: Apply AppM
 derive newtype instance applicativeAppM :: Applicative AppM
 derive newtype instance bindAppM :: Bind AppM
 derive newtype instance monadAppM :: Monad AppM
--- | Error handling
-derive newtype instance monadThrowAppM :: MonadThrow Error AppM
-derive newtype instance monadErrorAppM :: MonadError Error AppM
 -- | Run under `Effect` and `Aff`
 derive newtype instance monadEffAppM :: MonadEffect AppM
 derive newtype instance monadAffAppM :: MonadAff AppM
 
+safeLift :: forall a. Aff a -> ExceptT Error AppM a
+safeLift = ExceptT <<< AppM <<< try
+
 -- | Give `AppM` capability to abstract over file system
 instance monadFSAppM :: MonadFS Error AppM where
   -- check
-  exists = AppM <<< FS.exists
+  exists = safeLift <<< FS.exists
 
   -- read
-  readFile = AppM <<< FS.readTextFile UTF8
-  readDir = AppM <<< map fromFoldable <<< FS.readdir
-  getMetadata = AppM <<< FS.stat
+  readFile = safeLift <<< FS.readTextFile UTF8
+  readDir = safeLift <<< map fromFoldable <<< FS.readdir
+  getMetadata = safeLift <<< FS.stat

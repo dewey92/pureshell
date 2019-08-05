@@ -1,17 +1,18 @@
-module PureShell.Ls.Ls ( ls ) where
+module PureShell.Ls.Ls
+  ( LsError
+  , ls
+  ) where
 
 import Prelude
 
+import Control.Monad.Except (ExceptT, withExceptT)
 import Data.Array (intercalate)
-import Data.Bifunctor (bimap)
-import Data.Either (Either(..), fromRight)
 import Data.List (List, filter, singleton)
 import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Node.FS.Stats (Stats(..))
 import Node.Path (FilePath)
-import Partial.Unsafe (unsafePartial)
-import PureShell.Common.MonadFS (class MonadFS, getMetadata, readDir, try)
+import PureShell.Common.MonadFS (class MonadFS, getMetadata, readDir)
 import PureShell.Ls.Types (FileSystemType, LsOptions, isDirectory, isFile, isHidden, prefixWith, toFileSystemType)
 
 data LsError = FileOrDirNotExists
@@ -20,47 +21,37 @@ instance showLsError :: Show LsError where
   show _ = "No such file or directory"
 
 type FileStats = (FileSystemType /\ Stats)
-type ErrorOrFileStats = (Either LsError FileStats)
 
 -- | The main program of `ls` command
-ls :: ∀ m e. MonadFS e m => FilePath -> LsOptions -> m String
-ls filePath options = safeGetMetadata filePath >>= case _ of
-  Left e -> pure $ show e
-  Right fileStats@(f /\ _) -> do
-    stats <- if isFile f
-      then fileStats # singleton # pure -- lift to a List
-      else getDirStats filePath options
-    pure $ summarizeStats stats
-    where
-      summarizeStats :: List FileStats -> String
-      summarizeStats = map (flip formatStats options) >>> intercalate "\n"
+ls :: ∀ m e. MonadFS e m => FilePath -> LsOptions -> ExceptT LsError m String
+ls filePath options = do
+  fileStats@(f /\ _) <- getFileStats filePath
+  stats <- if isFile f
+    then pure $ singleton fileStats -- lift to a List
+    else getDirStats filePath options
+  pure $ summarizeStats stats
+  where
+    summarizeStats :: List FileStats -> String
+    summarizeStats = map (flip formatStats options) >>> intercalate "\n"
 
--- | Safely get metadata (stats) and transforms to `FileStats` if succeeds
-safeGetMetadata :: ∀ m e. MonadFS e m => FilePath -> m ErrorOrFileStats
-safeGetMetadata filePath = do
-  stats <- try $ getMetadata filePath
-  pure $ bimap
-    (const FileOrDirNotExists)
-    (\s -> (toFileSystemType filePath s) /\ s)
-    stats
+-- | Read raw metadata then transform it to `FileStats` type
+getFileStats :: ∀ m e. MonadFS e m => FilePath -> ExceptT LsError m FileStats
+getFileStats filePath = do
+  stats <- withExceptT (const FileOrDirNotExists) (getMetadata filePath)
+  pure $ (toFileSystemType filePath stats) /\ stats
 
 -- | When the given input is a directory, list that directory with the stats
--- | then join the result with a breakline
-getDirStats :: ∀ m e. MonadFS e m => FilePath -> LsOptions -> m (List FileStats)
-getDirStats filePath options = listDirsInside filePath >>= concludeStats >>> pure
+getDirStats :: ∀ m e
+  .  MonadFS e m
+  => FilePath
+  -> LsOptions
+  -> ExceptT LsError m (List FileStats)
+getDirStats filePath options = do
+  dirContent <- withExceptT (const FileOrDirNotExists) (readDir filePath)
+  fileStats <- traverse (prefixWith filePath >>> getFileStats) dirContent
+  pure $ respectOptions fileStats
   where
-    concludeStats :: List ErrorOrFileStats -> List FileStats
-    concludeStats = filter (case _ of
-        Left _ -> false
-        Right (fp /\ s) -> options.withHiddenFiles || not (isHidden fp)
-      )
-      >>> (\s -> unsafePartial $ eliminateLeft s)
-    eliminateLeft :: Partial => List ErrorOrFileStats -> List FileStats
-    eliminateLeft = map (fromRight)
-
--- | Read all files and directories in a given filepath
-listDirsInside :: ∀ m e. MonadFS e m => FilePath -> m (List ErrorOrFileStats)
-listDirsInside dir = readDir dir >>= traverse (prefixWith dir >>> safeGetMetadata)
+    respectOptions = filter (\(fp /\ _) -> options.withHiddenFiles || not (isHidden fp))
 
 -- | Helper function to format metadata
 -- |

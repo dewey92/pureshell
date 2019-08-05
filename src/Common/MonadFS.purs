@@ -7,19 +7,20 @@ module PureShell.Common.MonadFS
   , module ME
   ) where
 
+import Prelude
 
-import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Error.Class (try) as ME
+import Control.Monad.Except (ExceptT)
 import Data.List (List)
 import Node.FS.Stats (Stats) as NodeFs
 import Node.Path (FilePath)
 
 -- | Define a monad for file system operations
-class MonadError e m <= MonadFS e m | m -> e where
+class Monad m <= MonadFS e m | m -> e where
   -- checking
-  exists :: FilePath -> m Boolean
+  exists :: FilePath -> ExceptT e m Boolean
 
   -- reading files or dirs
-  readFile :: FilePath -> m String
-  readDir :: FilePath -> m (List FilePath)
-  getMetadata :: FilePath -> m NodeFs.Stats
+  readFile :: FilePath -> ExceptT e m String
+  readDir :: FilePath -> ExceptT e m (List FilePath)
+  getMetadata :: FilePath -> ExceptT e m NodeFs.Stats
