@@ -22,7 +22,9 @@ instance showLsError :: Show LsError where
 
 type FileStats = (FileSystemType /\ Stats)
 
+-- |
 -- | The main program of `ls` command
+-- |
 ls :: ∀ m e. MonadFS e m => FilePath -> LsOptions -> ExceptT LsError m String
 ls filePath options = do
   fileStats@(f /\ _) <- getFileStats filePath
@@ -34,13 +36,17 @@ ls filePath options = do
     summarizeStats :: List FileStats -> String
     summarizeStats = map (flip formatStats options) >>> intercalate "\n"
 
+-- |
 -- | Read raw metadata then transform it to `FileStats` type
+-- |
 getFileStats :: ∀ m e. MonadFS e m => FilePath -> ExceptT LsError m FileStats
 getFileStats filePath = do
   stats <- withExceptT (const FileOrDirNotExists) (getMetadata filePath)
   pure $ (toFileSystemType filePath stats) /\ stats
 
+-- |
 -- | When the given input is a directory, list that directory with the stats
+-- |
 getDirStats :: ∀ m e
   .  MonadFS e m
   => FilePath

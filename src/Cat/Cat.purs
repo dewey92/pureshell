@@ -22,7 +22,9 @@ instance showCatErrors :: Show CatErrors where
   show (FileIsDir path) = path <> " is a directory"
   show (MiscError path) = "Can't read \"" <> path <> "\""
 
+-- |
 -- | The pure version of `cat` by using Constraints
+-- |
 cat :: ∀ m e. MonadFS e m => FilePath -> ExceptT CatErrors m String
 cat filePath = do
   doesExist <- withExceptT (const (MiscError filePath)) (exists filePath)
