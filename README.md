@@ -33,4 +33,5 @@ pureshell --help
 Currently it only supports the following commands:
 - cat
 - ls
+- mv
 - ...
