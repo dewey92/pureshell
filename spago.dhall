@@ -14,6 +14,7 @@ You can edit this file as you like.
     , "monad-logger"
     , "node-fs"
     , "node-fs-aff"
+    , "node-readline"
     , "optparse"
     , "psci-support"
     , "spec"

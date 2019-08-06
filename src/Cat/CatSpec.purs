@@ -33,6 +33,7 @@ instance monadFSTestCatM :: MonadFS Error TestCatM where
     | otherwise = throwError $ error "a dir"
   readDir _ = pure Nil
   getMetadata _ = pure mockMetadata
+  rename _ _ = pure unit
 
 spec :: Spec Unit
 spec = describe "cat" do
