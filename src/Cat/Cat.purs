@@ -5,8 +5,7 @@ module PureShell.Cat.Cat
 
 import Prelude
 
-import Control.Monad.Except (ExceptT, except, withExceptT)
-import Data.Either (Either(..))
+import Control.Monad.Except (ExceptT, throwError, withExceptT)
 import Node.Path (FilePath)
 import PureShell.Common.MonadFS (class MonadFS, exists, readFile)
 
@@ -29,5 +28,5 @@ cat :: ∀ m e. MonadFS e m => FilePath -> ExceptT CatErrors m String
 cat filePath = do
   doesExist <- withExceptT (const (MiscError filePath)) (exists filePath)
   case doesExist of
-    false -> except $ Left (FileNotExists filePath)
+    false -> throwError (FileNotExists filePath)
     true -> withExceptT (const (MiscError filePath)) (readFile filePath)

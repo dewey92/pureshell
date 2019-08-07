@@ -2,7 +2,7 @@ module PureShell.Mv.Mv where
 
 import Prelude
 
-import Control.Monad.Except (ExceptT(..), except, withExceptT)
+import Control.Monad.Except (ExceptT(..), throwError, withExceptT)
 import Data.Either (Either(..))
 import Data.String (toLower)
 import Node.Path (FilePath)
@@ -40,12 +40,12 @@ mv src dest opt = do
 
   -- prompt if necessary
   if not srcExists
-    then except $ Left SrcNotExists
+    then throwError SrcNotExists
     else ExceptT (promptUser opt)
 
   -- force if necessary
   if destExists && not opt.withForce
-    then except $ Left DestAlreadyExists
+    then throwError DestAlreadyExists
     else withExceptT (const MiscError) (rename src dest)
 
   -- when verbose option is active
